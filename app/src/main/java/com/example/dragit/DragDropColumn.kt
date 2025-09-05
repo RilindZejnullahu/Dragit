@@ -11,10 +11,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -108,19 +111,18 @@ fun <T : Any> DragDropColumn(
                 Modifier
             }
 
-            Row(
-                modifier = itemModifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            Box(
+                modifier = itemModifier.fillMaxWidth()
             ) {
-                Box(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    itemContent(item)
-                }
+                // Item content fills entire width
+                itemContent(item)
                 
+                // Drag handle overlaid on top-right
                 if (allowDrag) {
                     Box(
                         modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(8.dp)
                             .onGloballyPositioned { coordinates ->
                                 val position = coordinates.positionInParent()
                                 val size = coordinates.size
@@ -137,34 +139,21 @@ fun <T : Any> DragDropColumn(
 
 @Composable
 fun DefaultDragHandle() {
-    val handleColor = MaterialTheme.colorScheme.onSurfaceVariant
-    
     Box(
         modifier = Modifier
-            .size(48.dp)
-            .clickable { /* No action needed - drag is handled by pointer input */ }
-            .padding(8.dp),
+            .size(40.dp)
+            .background(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                shape = CircleShape
+            )
+            .clickable { /* No action needed - drag is handled by pointer input */ },
         contentAlignment = Alignment.Center
     ) {
-        Canvas(
-            modifier = Modifier.size(24.dp)
-        ) {
-            val strokeWidth = 3.dp.toPx()
-            val lineLength = size.width * 0.6f
-            val lineSpacing = size.height / 4f
-            val startX = (size.width - lineLength) / 2f
-            
-            // Draw three horizontal lines for drag handle
-            repeat(3) { index ->
-                val y = size.height / 2f + (index - 1) * lineSpacing
-                drawLine(
-                    color = handleColor,
-                    start = androidx.compose.ui.geometry.Offset(startX, y),
-                    end = androidx.compose.ui.geometry.Offset(startX + lineLength, y),
-                    strokeWidth = strokeWidth,
-                    cap = androidx.compose.ui.graphics.StrokeCap.Round
-                )
-            }
-        }
+        Icon(
+            imageVector = Icons.Default.Menu,
+            contentDescription = "Drag to reorder",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
