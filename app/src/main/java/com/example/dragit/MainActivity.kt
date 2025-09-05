@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -55,18 +54,13 @@ class MainActivity : ComponentActivity() {
 fun DragDropDemo(modifier: Modifier = Modifier) {
     var items by remember {
         mutableStateOf(
-            listOf(
-                ListItem(1, "First Item", Color(0xFF6200EE)),
-                ListItem(2, "Second Item", Color(0xFF3700B3)),
-                ListItem(3, "Third Item", Color(0xFF03DAC6)),
-                ListItem(4, "Fourth Item", Color(0xFFFF6200)),
-                ListItem(5, "Fifth Item", Color(0xFFFF5722)),
-                ListItem(6, "Sixth Item", Color(0xFF4CAF50)),
-                ListItem(7, "Seventh Item", Color(0xFF2196F3)),
-                ListItem(8, "Eighth Item", Color(0xFF9C27B0)),
-                ListItem(9, "Ninth Item", Color(0xFFFF9800)),
-                ListItem(10, "Tenth Item", Color(0xFF607D8B))
-            )
+            (1..10).map { index ->
+                ListItem(
+                    id = index,
+                    title = "Item $index", 
+                    color = colors[(index - 1) % colors.size]
+                )
+            }
         )
     }
 
@@ -77,7 +71,8 @@ fun DragDropDemo(modifier: Modifier = Modifier) {
                 add(toIndex, removeAt(fromIndex))
             }
         },
-        modifier = modifier.padding(16.dp)
+        modifier = modifier.padding(16.dp),
+        verticalSpacing = 12.dp
     ) { item ->
         ItemCard(item = item)
     }
@@ -101,6 +96,13 @@ fun ItemCard(item: ListItem) {
         )
     }
 }
+
+private val colors = listOf(
+    Color(0xFF6200EE), Color(0xFF3700B3), Color(0xFF03DAC6),
+    Color(0xFFFF6200), Color(0xFFFF5722), Color(0xFF4CAF50),
+    Color(0xFF2196F3), Color(0xFF9C27B0), Color(0xFFFF9800),
+    Color(0xFF607D8B)
+)
 
 @Preview(showBackground = true)
 @Composable
