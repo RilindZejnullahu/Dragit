@@ -3,7 +3,6 @@ package com.example.dragit
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -11,9 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
@@ -139,21 +136,12 @@ fun <T : Any> DragDropColumn(
 
 @Composable
 fun DefaultDragHandle() {
-    Box(
+    Icon(
+        imageVector = Icons.Default.Menu,
+        contentDescription = "Drag to reorder",
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
-            .size(40.dp)
-            .background(
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                shape = CircleShape
-            )
-            .clickable { /* No action needed - drag is handled by pointer input */ },
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.Menu,
-            contentDescription = "Drag to reorder",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp)
-        )
-    }
+            .size(32.dp)
+            .clickable { /* No action needed - drag is handled by pointer input */ }
+    )
 }
