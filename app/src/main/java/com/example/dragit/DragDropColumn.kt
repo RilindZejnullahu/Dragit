@@ -28,6 +28,21 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 
+/**
+ * A LazyColumn that supports drag-and-drop reordering via overlay drag handles.
+ * 
+ * Only the drag handle areas are draggable, allowing normal scrolling elsewhere.
+ * Items use full width with drag handles overlaid on the right side.
+ *
+ * @param items List of items to display and reorder
+ * @param onSwap Callback invoked when items need to be swapped (fromIndex, toIndex)
+ * @param modifier Modifier for the LazyColumn
+ * @param allowDrag Whether drag functionality is enabled
+ * @param verticalSpacing Spacing between items
+ * @param contentPadding Padding for the LazyColumn content
+ * @param dragHandleContent Custom drag handle content
+ * @param itemContent Content for each item
+ */
 @Composable
 fun <T : Any> DragDropColumn(
     items: List<T>,
@@ -35,6 +50,7 @@ fun <T : Any> DragDropColumn(
     modifier: Modifier = Modifier,
     allowDrag: Boolean = true,
     verticalSpacing: Dp = 8.dp,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
     dragHandleContent: @Composable () -> Unit = { DefaultDragHandle() },
     itemContent: @Composable LazyItemScope.(item: T) -> Unit
 ) {
@@ -89,7 +105,7 @@ fun <T : Any> DragDropColumn(
             modifier
         },
         state = listState,
-        contentPadding = PaddingValues(0.dp),
+        contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(verticalSpacing)
     ) {
         itemsIndexed(items = items) { index, item ->
@@ -99,10 +115,10 @@ fun <T : Any> DragDropColumn(
                     .zIndex(1f)
                     .graphicsLayer {
                         translationY = dragDropState.draggingItemOffset
-                        scaleX = 1.02f
-                        scaleY = 1.02f
-                        shadowElevation = 8f
-                        alpha = 0.9f
+                        scaleX = DragDropDefaults.DRAG_SCALE
+                        scaleY = DragDropDefaults.DRAG_SCALE
+                        shadowElevation = DragDropDefaults.DRAG_ELEVATION
+                        alpha = DragDropDefaults.DRAG_ALPHA
                     }
             } else {
                 Modifier
@@ -119,7 +135,7 @@ fun <T : Any> DragDropColumn(
                     Box(
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
-                            .padding(8.dp)
+                            .padding(DragDropDefaults.DRAG_HANDLE_PADDING)
                             .onGloballyPositioned { coordinates ->
                                 val position = coordinates.positionInParent()
                                 val size = coordinates.size
@@ -134,6 +150,10 @@ fun <T : Any> DragDropColumn(
     }
 }
 
+/**
+ * Default drag handle implementation using Material Menu icon.
+ * Provides a clean, unobtrusive drag handle with good touch target size.
+ */
 @Composable
 fun DefaultDragHandle() {
     Icon(
@@ -141,7 +161,27 @@ fun DefaultDragHandle() {
         contentDescription = "Drag to reorder",
         tint = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
-            .size(32.dp)
+            .size(DragDropDefaults.DRAG_HANDLE_SIZE)
             .clickable { /* No action needed - drag is handled by pointer input */ }
     )
+}
+
+/**
+ * Default values and constants for DragDropColumn behavior and appearance.
+ */
+object DragDropDefaults {
+    /** Scale factor applied to items while being dragged */
+    const val DRAG_SCALE = 1.02f
+    
+    /** Alpha transparency for items while being dragged */
+    const val DRAG_ALPHA = 0.9f
+    
+    /** Shadow elevation for items while being dragged */
+    const val DRAG_ELEVATION = 8f
+    
+    /** Size of the default drag handle */
+    val DRAG_HANDLE_SIZE = 32.dp
+    
+    /** Padding around the drag handle */
+    val DRAG_HANDLE_PADDING = 8.dp
 }

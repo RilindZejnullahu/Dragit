@@ -2,11 +2,22 @@ package com.example.dragit
 
 import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 
+/**
+ * State holder for drag-and-drop operations in a LazyColumn.
+ * 
+ * Manages drag gestures, collision detection, and item swapping.
+ * Uses center-point collision detection for intuitive drag behavior.
+ *
+ * @param state The LazyListState of the associated LazyColumn
+ * @param onSwap Callback invoked when items should be swapped
+ */
 class DragDropState internal constructor(
     val state: LazyListState,
     private val onSwap: (Int, Int) -> Unit
@@ -68,5 +79,24 @@ class DragDropState internal constructor(
             currentDraggedIndex = target.index
         }
     }
+}
 
+/**
+ * Creates and remembers a [DragDropState] for the given [LazyListState].
+ *
+ * @param lazyListState The LazyListState to associate with drag-and-drop operations
+ * @param onSwap Callback invoked when items should be swapped (fromIndex, toIndex)
+ * @return A remembered DragDropState instance
+ */
+@Composable
+fun rememberDragDropState(
+    lazyListState: LazyListState,
+    onSwap: (Int, Int) -> Unit
+): DragDropState {
+    return remember(lazyListState) {
+        DragDropState(
+            state = lazyListState,
+            onSwap = onSwap
+        )
+    }
 }
