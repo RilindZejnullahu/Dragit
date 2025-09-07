@@ -1,5 +1,8 @@
 package com.example.dragit
 
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -26,6 +30,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
 
 /**
@@ -33,6 +38,7 @@ import androidx.compose.ui.zIndex
  * 
  * Only the drag handle areas are draggable, allowing normal scrolling elsewhere.
  * Items use full width with drag handles overlaid on the right side.
+ * Items smoothly animate to their new positions when reordered.
  *
  * @param items List of items to display and reorder
  * @param onSwap Callback invoked when items need to be swapped (fromIndex, toIndex)
@@ -40,9 +46,12 @@ import androidx.compose.ui.zIndex
  * @param allowDrag Whether drag functionality is enabled
  * @param verticalSpacing Spacing between items
  * @param contentPadding Padding for the LazyColumn content
+ * @param animationSpec Animation specification for item reordering animations
+ * @param key Function to generate stable keys for items (must return Bundle-serializable types)
  * @param dragHandleContent Custom drag handle content
  * @param itemContent Content for each item
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun <T : Any> DragDropColumn(
     items: List<T>,
@@ -51,6 +60,8 @@ fun <T : Any> DragDropColumn(
     allowDrag: Boolean = true,
     verticalSpacing: Dp = 8.dp,
     contentPadding: PaddingValues = PaddingValues(0.dp),
+    animationSpec: FiniteAnimationSpec<IntOffset> = DragDropDefaults.DEFAULT_ANIMATION_SPEC,
+    key: ((item: T) -> Any)? = null,
     dragHandleContent: @Composable () -> Unit = { DefaultDragHandle() },
     itemContent: @Composable LazyItemScope.(item: T) -> Unit
 ) {
@@ -108,43 +119,86 @@ fun <T : Any> DragDropColumn(
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(verticalSpacing)
     ) {
-        itemsIndexed(items = items) { index, item ->
-            val isDragging = allowDrag && index == dragDropState.currentDraggedIndex
-            val itemModifier = if (isDragging) {
-                Modifier
-                    .zIndex(1f)
-                    .graphicsLayer {
-                        translationY = dragDropState.draggingItemOffset
-                        scaleX = DragDropDefaults.DRAG_SCALE
-                        scaleY = DragDropDefaults.DRAG_SCALE
-                        shadowElevation = DragDropDefaults.DRAG_ELEVATION
-                        alpha = DragDropDefaults.DRAG_ALPHA
-                    }
-            } else {
-                Modifier
+        if (key != null) {
+            itemsIndexed(items = items, key = { _, item -> key(item) }) { index, item ->
+                DragDropItem(
+                    item = item,
+                    index = index,
+                    dragDropState = dragDropState,
+                    allowDrag = allowDrag,
+                    animationSpec = animationSpec,
+                    dragHandleXRange = dragHandleXRange,
+                    onDragHandlePositioned = { range -> dragHandleXRange = range },
+                    dragHandleContent = dragHandleContent,
+                    itemContent = itemContent
+                )
             }
+        } else {
+            itemsIndexed(items = items) { index, item ->
+                DragDropItem(
+                    item = item,
+                    index = index,
+                    dragDropState = dragDropState,
+                    allowDrag = allowDrag,
+                    animationSpec = animationSpec,
+                    dragHandleXRange = dragHandleXRange,
+                    onDragHandlePositioned = { range -> dragHandleXRange = range },
+                    dragHandleContent = dragHandleContent,
+                    itemContent = itemContent
+                )
+            }
+        }
+    }
+}
 
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun <T : Any> LazyItemScope.DragDropItem(
+    item: T,
+    index: Int,
+    dragDropState: DragDropState,
+    allowDrag: Boolean,
+    animationSpec: FiniteAnimationSpec<IntOffset>,
+    dragHandleXRange: ClosedFloatingPointRange<Float>,
+    onDragHandlePositioned: (ClosedFloatingPointRange<Float>) -> Unit,
+    dragHandleContent: @Composable () -> Unit,
+    itemContent: @Composable LazyItemScope.(item: T) -> Unit
+) {
+    val isDragging = allowDrag && index == dragDropState.currentDraggedIndex
+    val itemModifier = if (isDragging) {
+        Modifier
+            .zIndex(1f)
+            .graphicsLayer {
+                translationY = dragDropState.draggingItemOffset
+                scaleX = DragDropDefaults.DRAG_SCALE
+                scaleY = DragDropDefaults.DRAG_SCALE
+                shadowElevation = DragDropDefaults.DRAG_ELEVATION
+                alpha = DragDropDefaults.DRAG_ALPHA
+            }
+    } else {
+        Modifier
+            .animateItem(placementSpec = animationSpec)
+    }
+
+    Box(
+        modifier = itemModifier.fillMaxWidth()
+    ) {
+        // Item content fills entire width
+        itemContent(item)
+        
+        // Drag handle overlaid on top-right
+        if (allowDrag) {
             Box(
-                modifier = itemModifier.fillMaxWidth()
-            ) {
-                // Item content fills entire width
-                itemContent(item)
-                
-                // Drag handle overlaid on top-right
-                if (allowDrag) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .padding(DragDropDefaults.DRAG_HANDLE_PADDING)
-                            .onGloballyPositioned { coordinates ->
-                                val position = coordinates.positionInParent()
-                                val size = coordinates.size
-                                dragHandleXRange = position.x..(position.x + size.width)
-                            }
-                    ) {
-                        dragHandleContent()
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(DragDropDefaults.DRAG_HANDLE_PADDING)
+                    .onGloballyPositioned { coordinates ->
+                        val position = coordinates.positionInParent()
+                        val size = coordinates.size
+                        onDragHandlePositioned(position.x..(position.x + size.width))
                     }
-                }
+            ) {
+                dragHandleContent()
             }
         }
     }
@@ -184,4 +238,10 @@ object DragDropDefaults {
     
     /** Padding around the drag handle */
     val DRAG_HANDLE_PADDING = 8.dp
+    
+    /** Default animation spec for smooth item reordering transitions */
+    val DEFAULT_ANIMATION_SPEC: FiniteAnimationSpec<IntOffset> = spring(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessMedium
+    )
 }

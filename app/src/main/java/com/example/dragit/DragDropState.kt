@@ -25,6 +25,7 @@ class DragDropState internal constructor(
     private var draggedDistance by mutableStateOf(0f)
     private var initialOffset by mutableStateOf(0)
     private var initialElement by mutableStateOf<LazyListItemInfo?>(null)
+    private var lastSwapTargetBounds by mutableStateOf<IntRange?>(null)
     
     var currentDraggedIndex by mutableStateOf<Int?>(null)
     
@@ -46,6 +47,7 @@ class DragDropState internal constructor(
             currentDraggedIndex = item.index
             initialElement = item
             initialOffset = item.offset
+            lastSwapTargetBounds = null
         }
     }
 
@@ -54,6 +56,7 @@ class DragDropState internal constructor(
         draggedDistance = 0f
         currentDraggedIndex = null
         initialElement = null
+        lastSwapTargetBounds = null
     }
 
     fun onDrag(offset: Offset) {
@@ -67,15 +70,19 @@ class DragDropState internal constructor(
         val draggedCenter = draggedStart + initialItem.size / 2
         
         // Find the item whose center the dragged item's center has crossed
+        // Exclude items with the same bounds as the last swap target to prevent cascading
         val targetItem = state.layoutInfo.visibleItemsInfo
             .firstOrNull { item ->
-                item.index != currentIndex && 
+                val itemBounds = item.offset..(item.offset + item.size)
+                item.index != currentIndex &&
+                itemBounds != lastSwapTargetBounds &&
                 draggedCenter >= item.offset && 
                 draggedCenter <= item.offset + item.size
             }
             
         targetItem?.let { target ->
             onSwap(currentIndex, target.index)
+            lastSwapTargetBounds = target.offset..(target.offset + target.size)
             currentDraggedIndex = target.index
         }
     }

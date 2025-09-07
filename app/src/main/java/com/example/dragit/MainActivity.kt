@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -72,7 +73,8 @@ fun DragDropDemo(modifier: Modifier = Modifier) {
             }
         },
         modifier = modifier.padding(16.dp),
-        verticalSpacing = 12.dp
+        verticalSpacing = 12.dp,
+        key = { item -> item.id }
     ) { item ->
         ItemCard(item = item)
     }
